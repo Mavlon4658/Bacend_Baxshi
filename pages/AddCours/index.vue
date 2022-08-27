@@ -1,7 +1,7 @@
 <template>
   <div class="pa-5">
-    <div class="grey lighten-2 pa-3" v-if="datas.length < 1">
-      <h2>Biz haqimizda ma'lumot qo'shing</h2>
+    <div class="grey lighten-2 pa-3">
+      <h2 class="mt-5 ms-4">Biz haqimizda ma'lumot qo'shing</h2>
       <v-form v-model="valid" @submit.prevent>
         <div class="my-8 col">
           <div class="file my-4 mb-6">
@@ -32,65 +32,43 @@
               </v-col>
             </v-row>
           </div>
-          <v-textarea
+          <div class="ps-1 pb-2 pt-5">Kurs nomi</div>
+          <v-text-field
             solo
-            name="input-7-4"
-            label="San'atni chuqurroq o'rganish haqida qisqacha matn kiriting."
-            v-model="textarea"
+            v-model="title"
             :rules="Textarea"
-          ></v-textarea>
+            label="Kurs nomini kiriting..."
+            required
+          ></v-text-field>
         </div>
-        <v-row>
+        <v-row class="px-3">
           <v-col cols="12" sm="6">
-            <div class="col">
-              <div>
-                <v-text-field
-                  clear-icon
-                  v-model="studentSoni"
-                  type="number"
-                  :rules="studetRules"
-                  :counter="10"
-                  label="Barcha studentlar"
-                  required
-                ></v-text-field>
-              </div>
-              <div class="pt-5">
-                <v-textarea
-                  solo
-                  name="input-7-4"
-                  label="Studentlar haqida ma'lumot kiriting"
-                  v-model="studentMatn"
-                  :rules="Textarea"
-                ></v-textarea>
-              </div>
+            <div class="ps-1 pb-2">
+              Kurs haqida <b>qisqa</b> ma'lumot kiriting.
             </div>
+            <v-textarea
+              solo
+              name="input-7-4"
+              label="Matn kiriting..."
+              v-model="kichik"
+              :rules="Textarea"
+            ></v-textarea>
           </v-col>
           <v-col cols="12" sm="6">
-            <div class="col">
-              <div>
-                <v-text-field
-                  v-model="sovrinlarSoni"
-                  :rules="studetRules"
-                  type="number"
-                  :counter="10"
-                  label="Barcha sovrinlar"
-                  required
-                ></v-text-field>
-              </div>
-              <div class="pt-5">
-                <v-textarea
-                  solo
-                  name="input-7-4"
-                  label="Sovrinlar haqida ma'lumot kiriting"
-                  v-model="sovrinMatn"
-                  :rules="Textarea"
-                ></v-textarea>
-              </div>
+            <div class="ps-1 pb-2">
+              Kurs haqida <b>to'liq</b> ma'lumot kiriting,
             </div>
+            <v-textarea
+              solo
+              name="input-7-4"
+              label="Matn kiriting..."
+              v-model="katta"
+              :rules="Textarea"
+            ></v-textarea>
           </v-col>
         </v-row>
         <v-row>
-          <v-col cols="12" sm="6" lg="4">
+          <v-col cols="12" sm="6" lg="4" class="pt-0 pb-5 px-5">
             <v-btn
               @click="sendData()"
               width="100%"
@@ -103,10 +81,6 @@
           </v-col>
         </v-row>
       </v-form>
-    </div>
-    <div v-else>
-      <h2 class="mt-5">Biz haqimizda bo'limiga ma'lumot qo'shilgan.</h2>
-      <v-btn class="info mt-5" to="/AllAbout">ko'rish</v-btn>
     </div>
     <div id="success" class="success white--text py-2 px-5">
       <v-icon color="white" size="18">mdi-check-bold</v-icon>
@@ -123,65 +97,43 @@
 export default {
   data() {
     return {
-      Textarea: [
-        (v) => !!v || 'Matnni kiritish majburiy.',
-        (v) => v.length <= 200 || 'Kiritgan matningiz 200 ta belgidan oshmasin',
-      ],
+      Textarea: [(v) => !!v || 'Matnni kiritish majburiy.'],
       valid: false,
-      textarea: '',
-      studentSoni: '',
-      studentMatn: '',
-      sovrinlarSoni: '',
-      sovrinMatn: '',
-      studetRules: [
-        (v) => !!v || "Ma'lumot to'ldirish majburiy",
-        (v) => v.length <= 10 || 'Name must be less than 10 characters',
-      ],
+      title: '',
+      kichik: '',
+      katta: '',
       image: [],
       t: false,
       error: '',
-      datas: [],
     }
   },
-  created() {
-    this.getAll();
-  },
   methods: {
-    getAll() {
-      this.$axios
-        .get('/about/getAll')
-        .then((res) => {
-          this.datas = res.data
-        })
-        .catch((err) => {
-          console.log(err)
-        })
-    },
     sendData() {
-      if (this.image.length == 2) {
+      if (this.image.length != 0 && this.image.length<=10) {
         this.error = ''
         let form = new FormData()
 
-        form.append('description', this.textarea)
-        form.append('student', this.studentSoni)
-        form.append('studentTitle', this.studentMatn)
-        form.append('prize', this.sovrinlarSoni)
-        form.append('prizeTitle', this.sovrinMatn)
+        form.append('title', this.title)
+        form.append('descriptionSmoll', this.kichik)
+        form.append('descriptionBig', this.katta)
 
         for (let item of Object.keys(this.image)) {
           form.append('file', this.image[item])
         }
 
         this.$axios
-          .post('/about/add', form)
+          .post('/cours/add', form)
           .then((res) => {
+            this.image = [];
+            this.title = null;
+            this.kichik = null;
+            this.katta = null;
             document.querySelector('#success').classList.add('success-active')
             setTimeout(() => {
               document
                 .querySelector('#success')
                 .classList.remove('success-active')
             }, 6000)
-            this.getAll();
           })
           .catch((err) => {
             document.querySelector('#error').classList.add('error-active')
@@ -190,7 +142,7 @@ export default {
             }, 6000)
           })
       } else {
-        this.error = '2 ta rasm tanlang'
+        this.error = 'Rasm tanlang'
       }
     },
     clickInput() {
@@ -202,8 +154,8 @@ export default {
       if (event.target.files.length > 0) {
         this.t = true
       }
-      if (event.target.files.length != 2) {
-        this.error = '2 ta rasm tanlang'
+      if (event.target.files.length == 0 && event.target.files.length <=10) {
+        this.error = 'Rasm tanlang'
       }
     },
   },

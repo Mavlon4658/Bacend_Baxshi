@@ -1,9 +1,15 @@
 <template>
-  <div class="pa-5">
-    <div class="grey lighten-2 pa-3" v-if="datas.length < 1">
-      <h2>Biz haqimizda ma'lumot qo'shing</h2>
-      <v-form v-model="valid" @submit.prevent>
-        <div class="my-8 col">
+  <div id="modal">
+    <div class="form white pa-10 grey lighten-2">
+      <v-btn
+        type="button"
+        class="error close py-3 mt-10 me-10"
+        @click="$emit('Close')"
+      >
+        <v-icon>mdi-close</v-icon>
+      </v-btn>
+      <v-form v-model="valid" @submit.prevent class="formm">
+        <div class="my-2 col">
           <div class="file my-4 mb-6">
             <input
               type="file"
@@ -45,7 +51,7 @@
             <div class="col">
               <div>
                 <v-text-field
-                  clear-icon
+                  solo
                   v-model="studentSoni"
                   type="number"
                   :rules="studetRules"
@@ -69,6 +75,7 @@
             <div class="col">
               <div>
                 <v-text-field
+                  solo
                   v-model="sovrinlarSoni"
                   :rules="studetRules"
                   type="number"
@@ -104,18 +111,6 @@
         </v-row>
       </v-form>
     </div>
-    <div v-else>
-      <h2 class="mt-5">Biz haqimizda bo'limiga ma'lumot qo'shilgan.</h2>
-      <v-btn class="info mt-5" to="/AllAbout">ko'rish</v-btn>
-    </div>
-    <div id="success" class="success white--text py-2 px-5">
-      <v-icon color="white" size="18">mdi-check-bold</v-icon>
-      <span>Ma'lumot qo'shildi.</span>
-    </div>
-    <div id="error" class="error white--text py-2 px-5">
-      <v-icon color="white" size="18">mdi-alert-circle</v-icon>
-      <span>Ma'lumot qo'shishda xatolik</span>
-    </div>
   </div>
 </template>
 
@@ -128,67 +123,74 @@ export default {
         (v) => v.length <= 200 || 'Kiritgan matningiz 200 ta belgidan oshmasin',
       ],
       valid: false,
+      studetRules: [
+        (v) => !!v || "Ma'lumot to'ldirish majburiy",
+      ],
       textarea: '',
       studentSoni: '',
       studentMatn: '',
       sovrinlarSoni: '',
       sovrinMatn: '',
-      studetRules: [
-        (v) => !!v || "Ma'lumot to'ldirish majburiy",
-        (v) => v.length <= 10 || 'Name must be less than 10 characters',
-      ],
       image: [],
       t: false,
       error: '',
-      datas: [],
+      id: '',
     }
   },
   created() {
-    this.getAll();
+    this.$axios
+      .get('/about/getAll')
+      .then((res) => {
+        const data = res.data[0]
+        this.textarea = data.description
+        this.studentSoni = Number(data.student)
+        this.studentMatn = data.studentTitle
+        this.sovrinlarSoni = Number(data.prize)
+        this.sovrinMatn = data.prizeTitle
+        this.id = data._id
+      })
+      .catch((err) => {
+        console.log(err)
+      })
   },
   methods: {
-    getAll() {
-      this.$axios
-        .get('/about/getAll')
-        .then((res) => {
-          this.datas = res.data
-        })
-        .catch((err) => {
-          console.log(err)
-        })
-    },
     sendData() {
       if (this.image.length == 2) {
         this.error = ''
-        let form = new FormData()
+        const data = {
+          description: this.textarea,
+          student: Number(this.studentSoni),
+          studentTitle: this.studentMatn,
+          prize: Number(this.sovrinlarSoni),
+          prizeTitle: this.sovrinMatn,
+        }
+        console.log(data)
 
-        form.append('description', this.textarea)
-        form.append('student', this.studentSoni)
-        form.append('studentTitle', this.studentMatn)
-        form.append('prize', this.sovrinlarSoni)
-        form.append('prizeTitle', this.sovrinMatn)
+        this.$axios
+          .put(`/about/updateInfo/${this.id}`, data)
+          .then((res) => {
+            console.log(res.data)
+          })
+          .catch((err) => {
+            console.log(err)
+          })
+
+        let form = new FormData()
 
         for (let item of Object.keys(this.image)) {
           form.append('file', this.image[item])
         }
 
         this.$axios
-          .post('/about/add', form)
+          .put(`/about/update/${this.id}`, form)
           .then((res) => {
-            document.querySelector('#success').classList.add('success-active')
-            setTimeout(() => {
-              document
-                .querySelector('#success')
-                .classList.remove('success-active')
-            }, 6000)
-            this.getAll();
+            console.log(res.data)
           })
           .catch((err) => {
-            document.querySelector('#error').classList.add('error-active')
-            setTimeout(() => {
-              document.querySelector('#error').classList.remove('error-active')
-            }, 6000)
+            console.log(err)
           })
+
+          this.$emit("Updated");
       } else {
         this.error = '2 ta rasm tanlang'
       }
@@ -210,28 +212,53 @@ export default {
 }
 </script>
 
+
 <style scoped>
-.err {
-  font-size: 12px;
-}
-.success {
+#modal {
+  width: 100%;
+  height: 100%;
   position: fixed;
+  background: rgba(0, 0, 0, 0.432);
+  top: 0;
+  left: 0;
+  z-index: 200;
+  padding: 50px;
+}
+#modal .form {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+}
+.formm {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  top: 0;
+  left: 0;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+::-webkit-scrollbar {
+  display: none;
+}
+.close {
+  position: absolute;
+  top: 0;
+  right: 0;
   z-index: 20;
-  top: 100px;
-  right: -100%;
-  transition: 1s ease all;
 }
-.success-active {
-  right: 20px;
-}
-.error {
-  position: fixed;
-  z-index: 20;
-  top: 100px;
-  right: -100%;
-  transition: 1s ease all;
-}
-.error-active {
-  right: 20px;
+@media (max-width: 500px) {
+  #modal {
+    padding: 0;
+  }
+  .form {
+    padding: 20px !important;
+  }
+  .close {
+    top: -30px !important;
+    right: -30px !important;
+  }
 }
 </style>
